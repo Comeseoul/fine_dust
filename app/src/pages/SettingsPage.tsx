@@ -5,7 +5,7 @@ import { GradeLegend } from '../components/domain/GradeBadge'
 import { Banner, Button, Card, ListRow, Section, Segmented, Skeleton } from '../components/ui'
 import { useDiagnostics } from '../hooks/useAirData'
 import { useSettings, type ThemePref } from '../store/SettingsContext'
-import { HAS_KEY, SOURCE_MODE } from '../lib/config'
+import { HAS_KEY, SKIP_CALL_WITHOUT_KEY, SOURCE_MODE } from '../lib/config'
 import type { DiagnosticResult } from '../lib/types'
 import './pages.css'
 
@@ -91,7 +91,13 @@ export default function SettingsPage() {
           <Card className="stack gap-12">
             <dl className="report__kv">
               <dt>인증키</dt>
-              <dd>{HAS_KEY ? '설정됨' : '없음'}</dd>
+              <dd>
+                {HAS_KEY
+                  ? '설정됨'
+                  : SKIP_CALL_WITHOUT_KEY
+                    ? '없음'
+                    : '서버에서 확인 (연결 진단 실행)'}
+              </dd>
               <dt>데이터 모드</dt>
               <dd>
                 {SOURCE_MODE === 'auto'
@@ -102,13 +108,18 @@ export default function SettingsPage() {
               </dd>
             </dl>
 
-            {!HAS_KEY && (
+            {SKIP_CALL_WITHOUT_KEY ? (
               <Banner tone="warn">
                 인증키가 없어 데모 데이터로 동작 중입니다. <code>app/.env.local</code> 의{' '}
-                <code>VITE_AIRKOREA_SERVICE_KEY</code> 에 공공데이터포털 Decoding 인증키를 넣고 개발
+                <code>AIRKOREA_SERVICE_KEY</code> 에 공공데이터포털 Decoding 인증키를 넣고 개발
                 서버를 다시 시작해 주세요.
               </Banner>
-            )}
+            ) : !HAS_KEY ? (
+              <Banner tone="info">
+                인증키는 서버(프록시)에만 있으므로 브라우저에서는 설정 여부를 알 수 없습니다.
+                아래 <b>연결 진단</b>으로 실제 상태를 확인해 주세요.
+              </Banner>
+            ) : null}
 
             <Button variant="secondary" block onClick={() => { setDiagOn(true); diag.refetch() }}>
               연결 진단 실행

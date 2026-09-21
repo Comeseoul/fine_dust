@@ -23,8 +23,12 @@ const ALLOWED_PREFIXES = [
   '/B552584/ArpltnStatsSvc/',
 ]
 
-/** 에어코리아 응답이 5~7초, 간헐적으로 더 지연된다. vite 프록시와 같은 값으로 맞춘다. */
-const UPSTREAM_TIMEOUT = 20_000
+/**
+ * 에어코리아 응답은 보통 5~7초다.
+ * Vercel 함수의 maxDuration(10초)보다 짧게 잡아, 플랫폼이 함수를 죽이기 전에
+ * 우리가 사유가 담긴 504 를 돌려줄 수 있게 한다. (본문 없는 504 는 원인 추적이 불가능하다)
+ */
+const UPSTREAM_TIMEOUT = 9_000
 
 /** client.ts 가 504 본문에서 읽어 가는 형식({ proxyError, message })으로 돌려준다. */
 function fail(status: number, message: string): Response {

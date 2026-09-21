@@ -21,14 +21,32 @@ export const HAS_KEY: boolean =
   typeof __HAS_SERVICE_KEY__ === 'boolean' ? __HAS_SERVICE_KEY__ : false
 
 /**
+ * ⚠ HAS_KEY 는 '빌드 시점'에 확정되는 값이라 배포 환경에서는 믿을 수 없다.
+ *
+ * 개발: vite.config.ts 가 .env.local 을 읽어 정확한 값을 넣어준다.
+ * 배포: 키는 서버리스 함수의 런타임 환경변수다. 빌드 단계에 그 변수가 주입되지
+ *       않았다면 HAS_KEY 가 false 가 되는데, 그 값을 믿고 데모로 고정해 버리면
+ *       함수에는 키가 멀쩡히 있는데도 앱이 영영 데모 데이터만 보여준다.
+ *
+ * 따라서 운영 빌드에서는 HAS_KEY 와 무관하게 항상 실데이터를 먼저 시도하고,
+ * 키가 없다는 사실은 프록시 응답(500 / 오류코드 30)으로 확인한다.
+ * 개발 빌드에서만 '키 없음 → 즉시 데모' 빠른 경로를 유지한다.
+ */
+const IS_DEV: boolean = env.DEV === true
+
+/**
  * auto  : 실데이터를 먼저 시도하고, 실패하거나 0건이면 데모 데이터로 폴백한다.
  *         (활용신청 직후 권한 전파 지연 / 에어코리아 서버 점검 대응)
  * live  : 항상 실데이터. 실패해도 폴백하지 않고 오류를 그대로 보여준다.
  * mock  : 항상 데모 데이터. 오프라인 시연·발표용.
  */
 export const ALLOW_FALLBACK = SOURCE_MODE === 'auto'
-export const FORCE_MOCK = SOURCE_MODE === 'mock' || (SOURCE_MODE === 'auto' && !HAS_KEY)
-export const KEY_MISSING_BUT_REQUIRED = SOURCE_MODE === 'live' && !HAS_KEY
+export const FORCE_MOCK =
+  SOURCE_MODE === 'mock' || (SOURCE_MODE === 'auto' && !HAS_KEY && IS_DEV)
+export const KEY_MISSING_BUT_REQUIRED = SOURCE_MODE === 'live' && !HAS_KEY && IS_DEV
+
+/** 키 없음을 사전에 차단할지 여부 — 개발 환경에서만 의미가 있다. */
+export const SKIP_CALL_WITHOUT_KEY = IS_DEV && !HAS_KEY
 
 /** 초기 표시용 추정값. 실제 출처는 각 응답의 Dataset.source 를 따른다. */
 export const INITIAL_SOURCE: DataSource = FORCE_MOCK ? 'mock' : 'live'

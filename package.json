@@ -1,0 +1,15 @@
+{
+  "name": "fine-dust",
+  "version": "0.1.0",
+  "private": true,
+  "description": "에어코리아 공공데이터 기반 미세먼지 현황·통계·이력 분석 앱",
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "preview": "npm --prefix app run preview",
+    "lint": "npm --prefix app run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

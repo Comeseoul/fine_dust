@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser'
-import { API_BASE, API_TIMEOUT, HAS_KEY } from '../lib/config'
+import { API_BASE, API_TIMEOUT, SKIP_CALL_WITHOUT_KEY } from '../lib/config'
 
 /** 공공데이터포털 표준 오류 — 화면에 그대로 보여줄 한국어 메시지로 변환한다. */
 const RESULT_MESSAGE: Record<string, string> = {
@@ -108,7 +108,9 @@ export async function getItems<T>(
   path: string,
   params: Record<string, string | number | undefined>,
 ): Promise<T[]> {
-  if (!HAS_KEY) {
+  // 배포 환경에서는 키 유무를 빌드 시점에 알 수 없으므로 차단하지 않는다.
+  // (키가 없다면 프록시가 500 또는 오류코드 30 으로 알려준다)
+  if (SKIP_CALL_WITHOUT_KEY) {
     throw new ApiError(
       '인증키가 설정되지 않았습니다.',
       'NO_KEY',

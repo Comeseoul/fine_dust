@@ -118,32 +118,58 @@ src/
 
 ### Vercel
 
-리포지터리에 다음이 포함되어 있어 추가 코드 작업은 필요 없습니다.
+앱이 `app/` 하위에 있으므로 **리포지터리 루트**에서 빌드하도록 구성돼 있습니다.
+아래 파일들이 이미 포함되어 있어 추가 코드 작업은 필요 없습니다.
 
 | 파일 | 역할 |
 |---|---|
-| `api/openapi/[...path].ts` | 인증키를 주입하는 서버리스 프록시 (에어코리아 3종 서비스만 허용) |
-| `vercel.json` | `/openapi/*` → 프록시 rewrite, SPA fallback, 함수 타임아웃 30초 |
+| `/vercel.json` | 빌드 경로(`app/`), 출력(`app/dist`), `/openapi/*` rewrite, SPA fallback |
+| `/package.json` | 루트 빌드 스크립트 (Vercel 이 프로젝트를 인식하는 진입점) |
+| `/api/openapi/[...path].ts` | 인증키를 주입하는 서버리스 프록시 (에어코리아 3종만 허용) |
 
-대시보드 설정:
+```
+repo/
+├── vercel.json                  빌드·라우팅 설정
+├── package.json                 루트 스크립트
+├── api/openapi/[...path].ts     서버리스 프록시 (키 주입)
+└── app/                         Vite 앱 → app/dist 로 빌드
+```
 
-1. **Root Directory** → `app` (리포 루트가 아니라 이 디렉터리)
-2. **Framework Preset** → Vite · Build Command `npm run build` · Output Directory `dist`
-3. **Environment Variables** → `AIRKOREA_SERVICE_KEY` 등록
-   (Production / Preview / Development 모두. `.env.local` 을 커밋하는 방식이 아닙니다)
+**대시보드 설정은 딱 하나입니다.**
 
-`AIRKOREA_SERVICE_KEY` 는 빌드 시점(`__HAS_SERVICE_KEY__` 계산)과 런타임(프록시의
-키 주입) 양쪽에서 쓰이므로, 등록 후에는 **재배포**해야 반영됩니다.
+> Settings → Environment Variables → `AIRKOREA_SERVICE_KEY` 등록
+> (Production / Preview / Development 모두 체크. `.env.local` 을 커밋하는 방식이 아닙니다)
+
+⚠ **Root Directory 는 비워 두세요(`./`).** `app` 으로 지정하면 루트의 `vercel.json` 과
+`api/` 를 읽지 못해 프록시가 동작하지 않습니다. 이전에 `app` 으로 설정했다면 되돌려야 합니다.
+
+환경변수를 등록한 뒤에는 **재배포**해야 반영됩니다.
+
+#### 배포 후 확인
+
+1. 사이트를 열고 **설정 → 연결 진단 실행**
+2. 4개 엔드포인트 상태를 확인
+
+| 진단 결과 | 의미 | 조치 |
+|---|---|---|
+| 🟢 정상 · N건 | 실데이터 연결됨 | — |
+| 🟠 데이터 0건 | 인증 통과, 권한 반영 대기 | 최대 1시간 후 재시도 |
+| 🟠 서버 오류 | 에어코리아 지연·장애 | 잠시 후 재시도 |
+| 🔴 인증 실패 | 키 미등록 또는 활용신청 미승인 | 환경변수·승인 상태 확인 후 재배포 |
+
+> 인증키는 서버에만 있으므로 브라우저는 설정 여부를 알 수 없습니다.
+> 그래서 배포본의 설정 화면은 "서버에서 확인 (연결 진단 실행)" 으로 표시합니다.
+> 키가 없더라도 앱은 데모 데이터로 정상 동작하며, 그 사유를 화면에 표기합니다.
 
 ### 그 외 환경 (nginx 등)
 
 ```nginx
-location /openapi/ {
-    proxy_pass https://apis.data.go.kr/;
+location ~ ^/openapi/(.*)$ {
+    # 키는 설정 파일에 직접 쓰지 말고 환경변수/시크릿에서 주입한다.
+    set $svckey "";                     # 예: envsubst 나 시크릿 매니저로 채움
     proxy_set_header Host apis.data.go.kr;
     proxy_ssl_server_name on;
-    # serviceKey 주입이 필요하므로 단순 pass 만으로는 부족하다.
-    # set $svc "<Decoding 키>"; 후 args 에 덧붙이거나 별도 BFF 를 둔다.
+    proxy_pass https://apis.data.go.kr/$1?$args&serviceKey=$svckey;
 }
 ```
 
