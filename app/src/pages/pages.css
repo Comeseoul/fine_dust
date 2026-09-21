@@ -1,0 +1,221 @@
+/* ---------------------------------------------------------------------------
+ *  화면 공통 레이아웃
+ * ------------------------------------------------------------------------- */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding-top: var(--sp-8);
+}
+
+/* ---- 현황 Hero ---------------------------------------------------------- */
+.hero { border-radius: var(--r-24); }
+
+.hero__figure {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.hero__icon { font-size: 32px; line-height: 1; }
+.hero__word { font-size: 34px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; }
+
+.hero__advice {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  word-break: keep-all;
+}
+
+.hero__split {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-12);
+  margin-top: var(--sp-20);
+  padding-top: var(--sp-16);
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+.hero__cell { flex: 1 1 0; min-width: 0; }
+.hero__divider { width: 1px; background: color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.hero__value { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+
+/* ---- CTA ---------------------------------------------------------------- */
+.page__cta {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  width: 100%; min-height: 50px; border-radius: var(--r-16);
+  background: var(--bg-surface); box-shadow: var(--shadow-card);
+  font-size: 14px; font-weight: 700; color: var(--text-brand);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.page__cta:active { transform: scale(0.98); }
+
+/* ---- 필터 바 (통계/이력) ------------------------------------------------ */
+.filterbar {
+  display: flex; flex-direction: column; gap: var(--sp-8);
+  position: sticky; top: calc(env(safe-area-inset-top) + 56px);
+  z-index: 15;
+  margin: 0 calc(var(--sp-20) * -1);
+  padding: var(--sp-8) var(--sp-20) var(--sp-12);
+  background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+}
+
+/* ---- 요약 타일 3열 ------------------------------------------------------ */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-12); }
+.tiles--2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ---- 인사이트 목록 ------------------------------------------------------ */
+.insight { display: flex; gap: 10px; align-items: flex-start; }
+.insight + .insight { margin-top: 12px; }
+.insight__mark {
+  flex: none; width: 22px; height: 22px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: var(--text-onBrand);
+}
+.insight__text { font-size: 13.5px; line-height: 1.55; word-break: keep-all; color: var(--text-secondary); }
+.insight__text b { color: var(--text-primary); font-weight: 700; }
+
+/* ---- 날짜 입력 ---------------------------------------------------------- */
+.daterow { display: flex; align-items: center; gap: 8px; }
+.dateinput {
+  flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border-hairline); border-radius: var(--r-12);
+  background: var(--bg-surface); color: var(--text-primary);
+  font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.dateinput:focus { border-color: var(--blue-500); outline: none; }
+
+/* ---- 리포트 ------------------------------------------------------------- */
+.report { background: var(--bg-surface); border-radius: var(--r-20); padding: var(--sp-24) var(--sp-20); box-shadow: var(--shadow-card); }
+.report__title { font-size: 20px; font-weight: 700; letter-spacing: -0.025em; }
+.report__meta { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+.report__h { font-size: 14px; font-weight: 700; margin: var(--sp-20) 0 var(--sp-8); }
+.report__p { font-size: 13.5px; line-height: 1.65; color: var(--text-secondary); word-break: keep-all; }
+.report__kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; }
+.report__kv dt { color: var(--text-tertiary); }
+.report__kv dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---- 설정 --------------------------------------------------------------- */
+.switch {
+  position: relative; width: 48px; height: 28px; border-radius: var(--r-full);
+  background: var(--border-strong); flex: none;
+  transition: background var(--dur-base) var(--ease-out);
+}
+.switch[aria-checked='true'] { background: var(--blue-500); }
+.switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%; background: var(--switch-knob);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.switch[aria-checked='true']::after { transform: translateX(20px); }
+
+.diag { display: flex; flex-direction: column; gap: 2px; }
+.diag__row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 4px; }
+.diag__row + .diag__row { border-top: 1px solid var(--divider); }
+.diag__dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: none; }
+.diag__name { font-size: 13px; font-weight: 700; }
+.diag__msg { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; line-height: 1.5; word-break: keep-all; }
+.diag__ms { font-size: 11px; color: var(--text-disabled); font-variant-numeric: tabular-nums; flex: none; }
+
+/* ===========================================================================
+ *  반응형 그리드 — 데스크톱에서 '넓어진 모바일'이 되지 않게 한다.
+ *
+ *  .page 의 자식은 기본적으로 전체 폭을 차지하고(모바일과 동일),
+ *  넓은 화면에서만 .c-4 / .c-6 / .c-8 로 좁혀 여러 장을 나란히 놓는다.
+ * ========================================================================= */
+
+@media (min-width: 768px) {
+  .page {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--sp-16);
+    align-items: start;
+  }
+  .page > * { grid-column: 1 / -1; }
+
+  /* 태블릿에서는 절반씩 */
+  .page > .c-4,
+  .page > .c-6 { grid-column: span 6; }
+  .page > .c-8 { grid-column: 1 / -1; }
+
+  .tiles { gap: var(--sp-16); }
+}
+
+@media (min-width: 1280px) {
+  .page {
+    gap: var(--sp-20);
+    padding-top: var(--sp-4);
+  }
+  .page > .c-4 { grid-column: span 4; }
+  .page > .c-6 { grid-column: span 6; }
+  .page > .c-8 { grid-column: span 8; }
+
+  /* 필터 바는 사이드바 아래 본문 상단에 고정 */
+  .filterbar {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sp-12);
+    top: 0;
+    margin: 0 calc(var(--sp-40) * -1);
+    padding: var(--sp-12) var(--sp-40) var(--sp-16);
+  }
+  .filterbar > * { max-width: 420px; }
+
+  /* 데스크톱에서는 요약 타일을 한 줄에 더 많이 */
+  .tiles { grid-template-columns: repeat(3, 1fr); }
+  .tiles--wide { grid-template-columns: repeat(6, 1fr); }
+
+  .hero__word { font-size: 40px; }
+  .hero__icon { font-size: 38px; }
+  .hero__value { font-size: 30px; }
+
+  /* 카드 hover — 데스크톱에는 포인터가 있다 */
+  .page__cta:hover { background: var(--bg-ghost); }
+  .rank__row:hover { background: var(--bg-ghost); }
+  .listrow:hover { background: var(--bg-ghost); }
+  .dtable tbody tr:hover { background: var(--bg-ghost); }
+}
+
+/* 데스크톱에서 표를 더 길게 보여준다 (스크롤 줄이기) */
+@media (min-width: 1280px) {
+  .tableview { max-height: 520px; }
+}
+
+/* ---- 지표 요약 바 (데스크톱 상단) --------------------------------------- */
+.kpibar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-12);
+}
+@media (min-width: 768px) { .kpibar { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1280px) { .kpibar { grid-template-columns: repeat(6, 1fr); gap: var(--sp-16); } }
+
+.kpi {
+  background: var(--bg-surface);
+  border-radius: var(--r-16);
+  padding: var(--sp-16);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.kpi__label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi__value { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+.kpi__unit { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-left: 2px; }
+.kpi__sub { font-size: 11px; font-weight: 600; }
+
+/* ---- 상관 산점도 -------------------------------------------------------- */
+.scatterwrap { width: 100%; }
+
+/* ---- 월별 등급 구성 ----------------------------------------------------- */
+.mixgrid { display: flex; flex-direction: column; gap: 7px; }
+.mixrow { display: grid; grid-template-columns: 38px 1fr 42px; align-items: center; gap: 10px; }
+.mixrow__label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.mixrow__bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; gap: 2px; }
+.mixrow__seg { height: 100%; }
+.mixrow__n { font-size: 11px; color: var(--text-tertiary); text-align: right; font-variant-numeric: tabular-nums; }

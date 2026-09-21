@@ -1,0 +1,174 @@
+/* ---------------------------------------------------------------------------
+ *  UI 프리미티브 — TDS Mobile 컴포넌트 규격 재구성
+ *  · 카드 라운드 20 / 리스트 라운드 16 / 칩 라운드 full
+ *  · 터치 타깃 최소 44px
+ *  · 눌림 피드백은 scale(0.97) + 120ms
+ * ------------------------------------------------------------------------- */
+
+/* ---- Card --------------------------------------------------------------- */
+.card {
+  background: var(--bg-surface);
+  border-radius: var(--r-20);
+  padding: var(--sp-20);
+  box-shadow: var(--shadow-card);
+}
+.card--flat { box-shadow: none; border: 1px solid var(--border-hairline); }
+.card--tight { padding: var(--sp-16); }
+.card--bleed { padding: var(--sp-20) 0; }
+
+/* ---- Section ------------------------------------------------------------ */
+.section { display: flex; flex-direction: column; gap: var(--sp-12); }
+.section__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-12); }
+.section__title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.section__desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+.section__action {
+  font-size: 13px; font-weight: 600; color: var(--text-brand);
+  padding: 6px 8px; margin: -6px -8px; border-radius: var(--r-8);
+}
+.section__action:active { background: var(--bg-ghost); }
+
+/* ---- Button ------------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 0 18px; border-radius: var(--r-12);
+  font-size: 15px; font-weight: 700; letter-spacing: -0.02em;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast);
+}
+.btn:active { transform: scale(0.97); }
+.btn--primary { background: var(--blue-500); color: var(--text-onBrand); }
+.btn--primary:active { background: var(--blue-600); }
+.btn--secondary { background: var(--bg-ghost); color: var(--text-primary); }
+.btn--ghost { background: transparent; color: var(--text-brand); }
+.btn--block { width: 100%; }
+.btn--sm { min-height: 36px; padding: 0 12px; font-size: 13px; border-radius: var(--r-8); }
+.btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+/* ---- Segmented control -------------------------------------------------- */
+.seg {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--bg-ghost); border-radius: var(--r-12);
+}
+.seg--block { display: flex; width: 100%; }
+.seg__item {
+  flex: 1 1 0; min-height: 36px; padding: 0 14px; border-radius: 9px;
+  font-size: 13px; font-weight: 600; color: var(--text-tertiary);
+  white-space: nowrap;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.seg__item[aria-selected='true'] {
+  background: var(--bg-surface); color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ---- Chip --------------------------------------------------------------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 34px; padding: 0 14px; border-radius: var(--r-full);
+  background: var(--bg-ghost); color: var(--text-secondary);
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.chip:active { transform: scale(0.96); }
+.chip[aria-pressed='true'] { background: var(--blue-500); color: var(--text-onBrand); }
+
+/* ---- Badge -------------------------------------------------------------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: var(--r-8);
+  font-size: 12px; font-weight: 700; line-height: 1.4;
+}
+.badge__dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+
+/* ---- List row ----------------------------------------------------------- */
+.list { background: var(--bg-surface); border-radius: var(--r-16); overflow: hidden; }
+.listrow {
+  display: flex; align-items: center; gap: var(--sp-12);
+  width: 100%; min-height: 56px; padding: 12px var(--sp-16);
+  text-align: left;
+  transition: background var(--dur-fast);
+}
+.listrow + .listrow { box-shadow: inset 0 1px 0 var(--divider); }
+.listrow:active { background: var(--bg-ghost); }
+.listrow__title { font-size: 15px; font-weight: 600; }
+.listrow__sub { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
+.listrow__chev { color: var(--text-disabled); flex: none; }
+
+/* ---- Skeleton ----------------------------------------------------------- */
+.skel {
+  border-radius: var(--r-8);
+  background: linear-gradient(
+    90deg,
+    var(--bg-ghost) 0%,
+    color-mix(in srgb, var(--bg-ghost) 40%, transparent) 50%,
+    var(--bg-ghost) 100%
+  );
+  background-size: 320px 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+/* ---- Empty / Error state ------------------------------------------------ */
+.state {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-8);
+  padding: var(--sp-40) var(--sp-24); text-align: center;
+}
+.state__icon { font-size: 28px; line-height: 1; margin-bottom: 2px; }
+.state__title { font-size: 15px; font-weight: 700; }
+.state__desc { font-size: 13px; color: var(--text-tertiary); max-width: 30ch; word-break: keep-all; }
+
+/* ---- Banner ------------------------------------------------------------- */
+.banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: var(--r-12);
+  font-size: 13px; line-height: 1.5; word-break: keep-all;
+}
+.banner--info { background: var(--banner-info-bg); color: var(--banner-info-fg); }
+.banner--warn { background: var(--grade-3-bg); color: var(--grade-3); }
+.banner__icon { flex: none; font-size: 14px; line-height: 1.5; }
+
+/* ---- Bottom sheet ------------------------------------------------------- */
+.sheet__scrim {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0, 0, 0, 0.42);
+  animation: sheetFade var(--dur-base) var(--ease-out) both;
+}
+.sheet {
+  position: fixed; left: 50%; bottom: 0; z-index: 91;
+  width: 100%; max-width: var(--app-max-w); transform: translateX(-50%);
+  background: var(--bg-surface);
+  border-radius: var(--r-24) var(--r-24) 0 0;
+  box-shadow: var(--shadow-sheet);
+  padding: 10px var(--sp-20) calc(var(--sp-20) + env(safe-area-inset-bottom));
+  max-height: 82vh; display: flex; flex-direction: column;
+  animation: sheetUp var(--dur-slow) var(--ease-out) both;
+}
+.sheet__handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--border-strong); margin: 2px auto 14px;
+}
+.sheet__title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.sheet__body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+@keyframes sheetFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheetUp {
+  from { transform: translate(-50%, 100%); }
+  to { transform: translate(-50%, 0); }
+}
+
+/* ---- Stat tile ---------------------------------------------------------- */
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat__label { font-size: 12px; color: var(--text-tertiary); font-weight: 600; }
+.stat__value { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+.stat__unit { font-size: 12px; font-weight: 600; color: var(--text-tertiary); margin-left: 3px; }
+.stat__delta { font-size: 12px; font-weight: 700; }
+
+/* ---- Table -------------------------------------------------------------- */
+.dtable { font-size: 13px; }
+.dtable th, .dtable td { padding: 9px 10px; text-align: right; white-space: nowrap; }
+.dtable th:first-child, .dtable td:first-child { text-align: left; }
+.dtable thead th {
+  font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-hairline);
+  position: sticky; top: 0; background: var(--bg-surface); z-index: 1;
+}
+.dtable tbody tr + tr td { border-top: 1px solid var(--divider); }
+.dtable td.num { font-variant-numeric: tabular-nums; }

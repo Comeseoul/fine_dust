@@ -1,0 +1,211 @@
+/* ---------------------------------------------------------------------------
+ *  앱 셸 — 반응형 3단
+ *
+ *    < 768px   모바일   : 단일 컬럼 + 하단 탭바 (TDS Mobile 규격)
+ *   768~1279   태블릿   : 2컬럼 그리드 + 하단 탭바
+ *   ≥ 1280px   데스크톱 : 좌측 사이드 내비 + 3컬럼 대시보드 (탭바 숨김)
+ *
+ *  데스크톱을 '넓어진 모바일'로 두지 않는다. 내비게이션 위치, 컬럼 수,
+ *  정보 밀도가 모두 달라진다.
+ * ------------------------------------------------------------------------- */
+
+.shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--app-max-w);
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+}
+
+.shell__main {
+  flex: 1 1 auto;
+  padding: 0 var(--sp-20)
+    calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--sp-32));
+  animation: fadeUp var(--dur-base) var(--ease-out) both;
+}
+
+/* ---- 상단 헤더 ---------------------------------------------------------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 calc(var(--sp-20) * -1);
+  padding: calc(env(safe-area-inset-top) + 10px) var(--sp-20) 10px;
+  background: color-mix(in srgb, var(--bg-page) 86%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+}
+.topbar--bordered { box-shadow: inset 0 -1px 0 var(--border-hairline); }
+.topbar__row { display: flex; align-items: center; gap: var(--sp-8); min-height: 36px; }
+.topbar__title { font-size: 20px; font-weight: 700; letter-spacing: -0.025em; }
+.topbar__sub { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
+
+/* 지역 선택 버튼 */
+.locbtn {
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 36px; padding: 0 10px 0 12px; border-radius: var(--r-full);
+  background: var(--bg-surface); box-shadow: var(--shadow-card);
+  font-size: 14px; font-weight: 700; letter-spacing: -0.02em;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.locbtn:active { transform: scale(0.96); }
+.locbtn__caret { color: var(--text-tertiary); font-size: 11px; }
+
+/* ---- 하단 탭바 (모바일·태블릿) ------------------------------------------ */
+.tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: 100%;
+  max-width: var(--app-max-w);
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: inset 0 1px 0 var(--border-hairline);
+}
+
+.tabbar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-disabled);
+  transition: color var(--dur-fast);
+}
+.tabbar__item.active { color: var(--blue-500); }
+.tabbar__item:active { opacity: 0.6; }
+.tabbar__label { font-size: 10px; font-weight: 600; letter-spacing: -0.01em; }
+.tabbar__item.active .tabbar__label { font-weight: 700; }
+
+/* ---- 사이드 내비 (데스크톱 전용) ---------------------------------------- */
+.sidenav { display: none; }
+
+/* ===========================================================================
+ *  태블릿 — 768px ~ 1279px
+ * ========================================================================= */
+@media (min-width: 768px) {
+  :root { --app-max-w: 760px; }
+
+  body { background: var(--bg-sunken); }
+
+  .shell {
+    box-shadow: 0 0 0 1px var(--border-hairline);
+  }
+  .shell__main { padding-left: var(--sp-24); padding-right: var(--sp-24); }
+  .topbar { margin: 0 calc(var(--sp-24) * -1); padding-left: var(--sp-24); padding-right: var(--sp-24); }
+  .topbar__title { font-size: 24px; }
+}
+
+/* ===========================================================================
+ *  데스크톱 — 1280px 이상
+ *  좌측 고정 사이드바 + 넓은 본문. 하단 탭바는 숨긴다.
+ * ========================================================================= */
+@media (min-width: 1280px) {
+  :root {
+    --app-max-w: none;
+    --sidenav-w: 240px;
+    --tabbar-h: 0px;
+  }
+
+  body { background: var(--bg-page); }
+
+  .shell {
+    max-width: none;
+    box-shadow: none;
+    display: grid;
+    grid-template-columns: var(--sidenav-w) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .shell__main {
+    padding: 0 var(--sp-40) var(--sp-48);
+    max-width: 1440px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* 탭바 → 사이드바로 교체 */
+  .tabbar { display: none; }
+
+  .sidenav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    padding: var(--sp-32) var(--sp-16);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-hairline);
+  }
+
+  .sidenav__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 var(--sp-12) var(--sp-24);
+  }
+  .sidenav__logo {
+    width: 32px; height: 32px; border-radius: 9px; flex: none;
+    background: var(--blue-500); color: var(--text-onBrand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+  }
+  .sidenav__name { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+  .sidenav__tag { font-size: 11px; color: var(--text-tertiary); margin-top: -1px; }
+
+  .sidenav__item {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 44px; padding: 0 var(--sp-12);
+    border-radius: var(--r-12);
+    color: var(--text-secondary);
+    font-size: 14px; font-weight: 600;
+    transition: background var(--dur-fast), color var(--dur-fast);
+  }
+  .sidenav__item:hover { background: var(--bg-ghost); color: var(--text-primary); }
+  .sidenav__item.active {
+    background: var(--blue-50);
+    color: var(--text-brand);
+    font-weight: 700;
+  }
+  .sidenav__foot {
+    margin-top: auto;
+    padding: var(--sp-12);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    word-break: keep-all;
+  }
+
+  /* 상단바는 본문 폭에 맞춰 확장 */
+  .topbar {
+    margin: 0 calc(var(--sp-40) * -1);
+    padding: var(--sp-32) var(--sp-40) var(--sp-16);
+    background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+  }
+  .topbar__title { font-size: 28px; letter-spacing: -0.03em; }
+  .topbar__sub { font-size: 13px; }
+}
+
+/* 다크 모드에서 사이드바 활성 항목 배경 */
+@media (min-width: 1280px) {
+  :root[data-theme='dark'] .sidenav__item.active {
+    background: color-mix(in srgb, var(--blue-500) 18%, transparent);
+  }
+}
+@media (min-width: 1280px) and (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) .sidenav__item.active {
+    background: color-mix(in srgb, var(--blue-500) 18%, transparent);
+  }
+}
