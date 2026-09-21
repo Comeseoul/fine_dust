@@ -95,32 +95,57 @@ src/
 
 ## 환경변수
 
-| 변수 | 기본값 | 설명 |
-|---|---|---|
-| `VITE_AIRKOREA_SERVICE_KEY` | — | 공공데이터포털 **Decoding** 인증키 |
-| `VITE_DATA_SOURCE` | `auto` | `auto` / `live` / `mock` |
-| `VITE_DEFAULT_SIDO` | `서울` | 기본 시도 |
-| `VITE_API_TIMEOUT` | `15000` | 타임아웃(ms) |
+| 변수 | 기본값 | 노출 | 설명 |
+|---|---|---|---|
+| `AIRKOREA_SERVICE_KEY` | — | 서버 전용 | 공공데이터포털 **Decoding** 인증키 |
+| `VITE_DATA_SOURCE` | `auto` | 클라이언트 | `auto` / `live` / `mock` |
+| `VITE_DEFAULT_SIDO` | `서울` | 클라이언트 | 기본 시도 |
+| `VITE_API_TIMEOUT` | `15000` | 클라이언트 | 타임아웃(ms) |
+
+인증키에는 `VITE_` 접두사를 붙이지 않습니다. 붙이면 값이 클라이언트 번들에
+포함되어 브라우저에 노출됩니다. 클라이언트에는 `__HAS_SERVICE_KEY__`(설정 여부)만
+전달되고, 키 자체는 프록시가 업스트림 호출 시점에만 주입합니다.
 
 `.env.local` 은 `.gitignore` 에 포함되어 커밋되지 않습니다.
 
 ---
 
-## 배포 시 주의
+## 배포
 
-`apis.data.go.kr` 은 CORS 헤더를 주지 않습니다. 앱은 항상 상대 경로 `/openapi` 로
-호출하므로, 배포 환경에서 이 경로를 리버스 프록시로 연결해야 합니다.
+`apis.data.go.kr` 은 CORS 헤더를 주지 않으므로 앱은 항상 상대 경로 `/openapi` 로
+호출합니다. 이 경로를 받아 인증키를 주입하는 프록시가 배포 환경에 있어야 합니다.
+`vite.config.ts` 의 `server.proxy` 는 `vite dev` 전용이라 빌드 결과물에는 없습니다.
+
+### Vercel
+
+리포지터리에 다음이 포함되어 있어 추가 코드 작업은 필요 없습니다.
+
+| 파일 | 역할 |
+|---|---|
+| `api/openapi/[...path].ts` | 인증키를 주입하는 서버리스 프록시 (에어코리아 3종 서비스만 허용) |
+| `vercel.json` | `/openapi/*` → 프록시 rewrite, SPA fallback, 함수 타임아웃 30초 |
+
+대시보드 설정:
+
+1. **Root Directory** → `app` (리포 루트가 아니라 이 디렉터리)
+2. **Framework Preset** → Vite · Build Command `npm run build` · Output Directory `dist`
+3. **Environment Variables** → `AIRKOREA_SERVICE_KEY` 등록
+   (Production / Preview / Development 모두. `.env.local` 을 커밋하는 방식이 아닙니다)
+
+`AIRKOREA_SERVICE_KEY` 는 빌드 시점(`__HAS_SERVICE_KEY__` 계산)과 런타임(프록시의
+키 주입) 양쪽에서 쓰이므로, 등록 후에는 **재배포**해야 반영됩니다.
+
+### 그 외 환경 (nginx 등)
 
 ```nginx
 location /openapi/ {
     proxy_pass https://apis.data.go.kr/;
     proxy_set_header Host apis.data.go.kr;
     proxy_ssl_server_name on;
+    # serviceKey 주입이 필요하므로 단순 pass 만으로는 부족하다.
+    # set $svc "<Decoding 키>"; 후 args 에 덧붙이거나 별도 BFF 를 둔다.
 }
 ```
-
-> 현재 구조는 인증키가 프런트엔드 번들에 포함됩니다. 실제 운영 배포 시에는
-> 인증키를 서버에서 주입하는 BFF 구조로 전환하는 것을 권장합니다.
 
 ---
 
