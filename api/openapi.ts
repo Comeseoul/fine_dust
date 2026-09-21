@@ -3,30 +3,31 @@
  *
  * `vite.config.ts` 의 server.proxy 가 같은 일을 하지만 그 설정은 `vite dev` 에서만
  * 동작하고 `vite build` 결과물에는 남지 않는다. 따라서 배포본에서 `/openapi/*` 를
- * 받아 줄 서버 측 대역이 별도로 필요하다. (vercel.json 의 rewrite 가 연결한다)
+ * 받아 줄 서버 측 대역이 별도로 필요하다.
  *
  * 인증키는 이 계층에서만 주입한다. 클라이언트가 보낸 serviceKey 는 무시하고 서버
  * 환경변수 값으로 덮어써, 키가 브라우저 네트워크 탭·히스토리·Referer·접근 로그에
  * 남지 않도록 한다. → src/api/client.ts 의 getItems 주석 참고.
  *
- * ⚠ 핸들러 형태에 대해
- *   Vercel 의 /api 함수는 Node.js 클래식 시그니처 `export default (req, res)` 를
- *   쓴다. 웹 표준 시그니처(`export function GET(request: Request)`)는 프레임워크나
- *   런타임 설정에 따라 인식되지 않을 수 있어, 이식성이 확실한 쪽을 택했다.
+ * ⚠ 왜 동적 경로(api/openapi/[...path].ts)를 쓰지 않는가
+ *   처음에는 catch-all 파일명으로 만들었으나 배포 후 /api/openapi/* 가 계속 404 였다.
+ *   파일명의 대괄호는 vercel.json 의 functions 글롭에서도, 플랫폼의 라우팅 규칙에서도
+ *   해석이 갈리는 지점이라 원인 추적이 어렵다. 그래서 동적 경로를 아예 없애고
+ *   평범한 단일 함수로 두고, 업스트림 경로는 rewrite 가 __path 쿼리로 넘겨준다.
+ *     vercel.json:  /openapi/:path*  →  /api/openapi?__path=:path*
+ *   (원래 쿼리스트링은 rewrite 시 그대로 보존되어 병합된다)
  */
 
 /** 최소한의 구조적 타입 — @vercel/node 에 의존하지 않기 위해 직접 선언한다. */
 interface ProxyRequest {
   method?: string
   url?: string
-  headers: Record<string, string | string[] | undefined>
 }
 
 interface ProxyResponse {
   status(code: number): ProxyResponse
   setHeader(name: string, value: string): void
   send(body: string): void
-  end(): void
 }
 
 const UPSTREAM = 'https://apis.data.go.kr'
@@ -67,21 +68,24 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse): Pr
     return fail(res, 500, 'AIRKOREA_SERVICE_KEY 환경변수가 설정되지 않았습니다.')
   }
 
-  // req.url 은 경로+쿼리("/api/openapi/...?a=1")만 담기므로 더미 origin 을 붙여 파싱한다.
+  // req.url 은 경로+쿼리만 담기므로 더미 origin 을 붙여 파싱한다.
   const incoming = new URL(req.url ?? '/', 'http://localhost')
+  const qs = new URLSearchParams(incoming.search)
 
-  // rewrite 전(/openapi/...) · 후(/api/openapi/...) 어느 형태로 들어오든 업스트림 경로만 남긴다.
-  const path = incoming.pathname
-    .replace(/^\/api\/openapi/, '')
-    .replace(/^\/openapi/, '')
+  // rewrite 가 넘겨준 업스트림 경로. 직접 호출된 경우를 대비해 pathname 도 본다.
+  const raw =
+    qs.get('__path') ??
+    incoming.pathname.replace(/^\/api\/openapi/, '').replace(/^\/openapi/, '')
+  qs.delete('__path')
+
+  const path = raw.startsWith('/') ? raw : `/${raw}`
 
   if (!ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
-    return fail(res, 404, '허용되지 않은 경로입니다.')
+    return fail(res, 404, `허용되지 않은 경로입니다. (${path})`)
   }
 
   // Decoding 키를 URLSearchParams 로 1회만 인코딩한다.
   // (Encoding 키를 넣으면 이중 인코딩되어 30번 오류가 난다.)
-  const qs = new URLSearchParams(incoming.search)
   qs.set('serviceKey', serviceKey)
 
   const ctrl = new AbortController()

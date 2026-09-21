@@ -4,7 +4,7 @@
   "buildCommand": "npm --prefix app run build",
   "outputDirectory": "app/dist",
   "rewrites": [
-    { "source": "/openapi/:path*", "destination": "/api/openapi/:path*" },
+    { "source": "/openapi/:path*", "destination": "/api/openapi?__path=:path*" },
     { "source": "/((?!api/|openapi/).*)", "destination": "/index.html" }
   ]
 }
