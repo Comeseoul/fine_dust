@@ -6,10 +6,5 @@
   "rewrites": [
     { "source": "/openapi/:path*", "destination": "/api/openapi/:path*" },
     { "source": "/((?!api/|openapi/).*)", "destination": "/index.html" }
-  ],
-  "functions": {
-    "api/openapi/[...path].ts": {
-      "maxDuration": 10
-    }
-  }
+  ]
 }

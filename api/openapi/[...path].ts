@@ -1,5 +1,5 @@
 /**
- * 배포 환경 전용 오픈 API 프록시 (Vercel Function).
+ * 배포 환경 전용 오픈 API 프록시 (Vercel Serverless Function).
  *
  * `vite.config.ts` 의 server.proxy 가 같은 일을 하지만 그 설정은 `vite dev` 에서만
  * 동작하고 `vite build` 결과물에는 남지 않는다. 따라서 배포본에서 `/openapi/*` 를
@@ -8,7 +8,26 @@
  * 인증키는 이 계층에서만 주입한다. 클라이언트가 보낸 serviceKey 는 무시하고 서버
  * 환경변수 값으로 덮어써, 키가 브라우저 네트워크 탭·히스토리·Referer·접근 로그에
  * 남지 않도록 한다. → src/api/client.ts 의 getItems 주석 참고.
+ *
+ * ⚠ 핸들러 형태에 대해
+ *   Vercel 의 /api 함수는 Node.js 클래식 시그니처 `export default (req, res)` 를
+ *   쓴다. 웹 표준 시그니처(`export function GET(request: Request)`)는 프레임워크나
+ *   런타임 설정에 따라 인식되지 않을 수 있어, 이식성이 확실한 쪽을 택했다.
  */
+
+/** 최소한의 구조적 타입 — @vercel/node 에 의존하지 않기 위해 직접 선언한다. */
+interface ProxyRequest {
+  method?: string
+  url?: string
+  headers: Record<string, string | string[] | undefined>
+}
+
+interface ProxyResponse {
+  status(code: number): ProxyResponse
+  setHeader(name: string, value: string): void
+  send(body: string): void
+  end(): void
+}
 
 const UPSTREAM = 'https://apis.data.go.kr'
 
@@ -25,36 +44,39 @@ const ALLOWED_PREFIXES = [
 
 /**
  * 에어코리아 응답은 보통 5~7초다.
- * Vercel 함수의 maxDuration(10초)보다 짧게 잡아, 플랫폼이 함수를 죽이기 전에
+ * Vercel 함수의 실행 제한(기본 10초)보다 짧게 잡아, 플랫폼이 함수를 죽이기 전에
  * 우리가 사유가 담긴 504 를 돌려줄 수 있게 한다. (본문 없는 504 는 원인 추적이 불가능하다)
  */
 const UPSTREAM_TIMEOUT = 9_000
 
 /** client.ts 가 504 본문에서 읽어 가는 형식({ proxyError, message })으로 돌려준다. */
-function fail(status: number, message: string): Response {
-  return new Response(JSON.stringify({ proxyError: true, message }), {
-    status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
-    },
-  })
+function fail(res: ProxyResponse, status: number, message: string): void {
+  res.status(status)
+  res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-store')
+  res.send(JSON.stringify({ proxyError: true, message }))
 }
 
-export async function GET(request: Request): Promise<Response> {
-  const serviceKey = (process.env.AIRKOREA_SERVICE_KEY ?? '').trim()
-  if (!serviceKey) {
-    return fail(500, 'AIRKOREA_SERVICE_KEY 환경변수가 설정되지 않았습니다.')
+export default async function handler(req: ProxyRequest, res: ProxyResponse): Promise<void> {
+  if (req.method && req.method !== 'GET') {
+    return fail(res, 405, 'GET 요청만 지원합니다.')
   }
 
-  const incoming = new URL(request.url)
+  const serviceKey = (process.env.AIRKOREA_SERVICE_KEY ?? '').trim()
+  if (!serviceKey) {
+    return fail(res, 500, 'AIRKOREA_SERVICE_KEY 환경변수가 설정되지 않았습니다.')
+  }
+
+  // req.url 은 경로+쿼리("/api/openapi/...?a=1")만 담기므로 더미 origin 을 붙여 파싱한다.
+  const incoming = new URL(req.url ?? '/', 'http://localhost')
+
   // rewrite 전(/openapi/...) · 후(/api/openapi/...) 어느 형태로 들어오든 업스트림 경로만 남긴다.
   const path = incoming.pathname
     .replace(/^\/api\/openapi/, '')
     .replace(/^\/openapi/, '')
 
   if (!ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
-    return fail(404, '허용되지 않은 경로입니다.')
+    return fail(res, 404, '허용되지 않은 경로입니다.')
   }
 
   // Decoding 키를 URLSearchParams 로 1회만 인코딩한다.
@@ -71,24 +93,24 @@ export async function GET(request: Request): Promise<Response> {
     })
     const body = await upstream.text()
 
-    return new Response(body, {
-      status: upstream.status,
-      headers: {
-        'Content-Type':
-          upstream.headers.get('content-type') ?? 'application/json; charset=utf-8',
-        // 에어코리아는 일일 호출 한도(오류코드 22)가 있다. 측정값은 1시간 주기로
-        // 갱신되므로 짧게 캐시해도 신선도를 잃지 않고 호출량을 줄일 수 있다.
-        'Cache-Control': upstream.ok
-          ? 'public, s-maxage=60, stale-while-revalidate=600'
-          : 'no-store',
-      },
-    })
+    res.status(upstream.status)
+    res.setHeader(
+      'Content-Type',
+      upstream.headers.get('content-type') ?? 'application/json; charset=utf-8',
+    )
+    // 에어코리아는 일일 호출 한도(오류코드 22)가 있다. 측정값은 1시간 주기로
+    // 갱신되므로 짧게 캐시해도 신선도를 잃지 않고 호출량을 줄일 수 있다.
+    res.setHeader(
+      'Cache-Control',
+      upstream.ok ? 'public, s-maxage=60, stale-while-revalidate=600' : 'no-store',
+    )
+    res.send(body)
   } catch (e) {
     const reason =
       (e as Error).name === 'AbortError'
         ? `${UPSTREAM_TIMEOUT / 1000}초 안에 응답하지 않았습니다`
         : (e as Error).message
-    return fail(504, `에어코리아 서버가 응답하지 않습니다 (${reason}).`)
+    fail(res, 504, `에어코리아 서버가 응답하지 않습니다 (${reason}).`)
   } finally {
     clearTimeout(timer)
   }
