@@ -132,19 +132,25 @@ export async function getItems<T>(
       headers: { Accept: 'application/json' },
     })
     if (!res.ok) {
-      // 프록시가 업스트림 지연을 504 + 사유 JSON 으로 알려주는 경우
+      // 프록시(개발: vite.config.ts / 배포: 서버리스 함수)는 실패 사유를
+      // { proxyError: true, message } 로 알려준다. 상태코드만 보여주면
+      // 사용자가 무엇을 해야 할지 알 수 없으므로 사유를 그대로 끌어올린다.
+      const reason = await readProxyReason(res)
+
       if (res.status === 504) {
-        let detail = ''
-        try {
-          const body = (await res.clone().json()) as { proxyError?: boolean; message?: string }
-          if (body?.proxyError && body.message) detail = ` ${body.message}`
-        } catch {
-          /* 본문이 JSON 이 아니면 무시한다 */
-        }
         throw new ApiError(
-          `에어코리아 서버가 제때 응답하지 않았습니다.${detail}`,
+          `에어코리아 서버가 제때 응답하지 않았습니다.${reason ? ` ${reason}` : ''}`,
           '504',
           '공공 API 측 일시 지연입니다. 잠시 후 다시 조회해 주세요.',
+        )
+      }
+      if (reason) {
+        throw new ApiError(
+          reason,
+          res.status === 500 ? 'PROXY_CONFIG' : String(res.status),
+          res.status === 500
+            ? '배포 환경이라면 Vercel 프로젝트 설정에 AIRKOREA_SERVICE_KEY 를 등록하고 재배포해야 합니다.'
+            : undefined,
         )
       }
       throw new ApiError(`서버가 ${res.status} 로 응답했습니다.`, String(res.status))
@@ -165,9 +171,22 @@ export async function getItems<T>(
   }
 }
 
-/** 인증키 / 활용신청 관련 오류인지 (= 사용자가 조치해야 하는 오류) */
+/** 프록시가 돌려준 실패 사유를 꺼낸다. JSON 이 아니면 null. */
+async function readProxyReason(res: Response): Promise<string | null> {
+  try {
+    const body = (await res.clone().json()) as { proxyError?: boolean; message?: string }
+    return body?.proxyError && body.message ? body.message : null
+  } catch {
+    return null
+  }
+}
+
+/** 인증키 / 활용신청 / 프록시 설정 관련 오류인지 (= 사용자가 조치해야 하는 오류) */
 export function isAuthError(e: unknown): boolean {
-  return e instanceof ApiError && ['20', '30', '31', '32', 'NO_KEY'].includes(e.code ?? '')
+  return (
+    e instanceof ApiError &&
+    ['20', '30', '31', '32', 'NO_KEY', 'PROXY_CONFIG'].includes(e.code ?? '')
+  )
 }
 
 /** 재시도하면 풀릴 수 있는 일시적 오류인지 */
